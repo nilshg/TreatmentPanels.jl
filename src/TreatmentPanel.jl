@@ -1,7 +1,5 @@
 using DataFrames
 
-df = DataFrame(rand(10, 10), :auto)
-
 # Abstract type for dispatch
 abstract type TreatmentPanel end
 
