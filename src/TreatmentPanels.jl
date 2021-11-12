@@ -1,5 +1,7 @@
 module TreatmentPanels
 
-# Write your package code here.
+include("TreatmentPanel.jl")
+
+export TreatmentPanel
 
 end
