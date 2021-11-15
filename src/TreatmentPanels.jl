@@ -1,7 +1,8 @@
 module TreatmentPanels
 
 include("TreatmentPanel.jl")
+include("show_and_plot.jl")
 
-export TreatmentPanel
+export BalancedPanel, UnbalancedPanel
 
 end
