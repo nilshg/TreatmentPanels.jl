@@ -56,8 +56,6 @@ function BalancedPanel(df::DataFrame, treatment_assignment::Vector{Pair{NType, T
 
     ### SANITY CHECKS ###
 
-    println("Hit the constructor")
-
     # Check relevant info has been provided
     !isnothing(outcome_var) || error(ArgumentError(
         "Please specify outcome_var, the name of the column in your dataset holding the "*
@@ -133,8 +131,6 @@ function BalancedPanel(df::DataFrame, treatment_assignment::Vector{Pair{NType, T
 
     tdtype = ContinuousTreatment
 
-    println("Constructing panel")
-    @show N, T, W, ts, is, Y
     BalancedPanel{uttype, tdtype}(N, T, W, ts, is, Y)    
 end
 

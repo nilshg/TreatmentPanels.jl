@@ -29,11 +29,12 @@ end
         end
         
         #!# TO FIX - the xticks aren't displayed
-        xticks := (1:bp.T, bp.ts)
+        #xticks := (1:bp.T, bp.ts)
 
     elseif kind == "outcome"
         
         yguide := "Outcome value"
+        legend --> :outertopright
 
         for i ∈ 1:bp.N
 
