@@ -15,7 +15,7 @@ end
 @recipe function f(bp::BalancedPanel; kind = "treatment")
 
     xguide := "Period"
-    xticks --> bp.ts
+    #xticks --> bp.ts
 
     if kind == "treatment"
         
@@ -23,13 +23,28 @@ end
         yguide := "Unit"
         yticks --> (1:bp.N, bp.is)
 
-        @series begin
-            seriestype := :heatmap
-            x := bp.W
-        end
-        
-        #!# TO FIX - the xticks aren't displayed
-        #xticks := (1:bp.T, bp.ts)
+        #@series begin
+        #    seriestype := :heatmap
+        #    x := bp.W
+        #end
+
+        for (i, r) ∈ enumerate(eachrow(bp.W))
+            if sum(r) > 0
+                @series begin
+                    seriestype := :scatter
+                    alpha --> [x ? 1.0 : 0.3 for x ∈ r]
+                    markerstrokewidth --> 0.01
+                    bp.ts, fill(i, length(r))
+                end
+            else 
+                @series begin
+                    seriestype := :scatter
+                    color --> "grey"
+                    markerstrokewidth --> 0.01
+                    bp.ts, fill(i, length(r))
+                end
+           end
+       end
 
     elseif kind == "outcome"
         
@@ -48,7 +63,9 @@ end
                 @series begin
                     seriestype := :scatter
                     color --> i 
-                    markersize --> 7
+                    markersize --> 5
+                    markerstrokewidth --> 0.01
+                    markershape --> :square
                     label --> ""
                     [bp.ts[findfirst(bp.W[i, :])]], [bp.Y[i, findfirst(bp.W[i, :])]]
                 end
@@ -56,7 +73,7 @@ end
                 @series begin
                     label --> ""
                     color --> i
-                    alpha --> 0.5
+                    alpha --> 0.7
                     #linestyle --> :dash
                     bp.ts[findfirst(bp.W[i, :]):end], bp.Y[i, findfirst(bp.W[i, :]):end]
                 end
@@ -64,6 +81,7 @@ end
                 @series begin
                     label --> bp.is[i]
                     color --> i
+                    alpha --> 0.3
                     bp.ts, bp.Y[i, :]
                 end 
             end
