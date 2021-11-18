@@ -52,7 +52,7 @@ function BalancedPanel(df::DataFrame, treatment_assignment::Vector{Pair{NType, T
     id_var = nothing, 
     t_var = nothing, 
     outcome_var = nothing,  
-    sort_inplace = false) where NType where TType
+    sort_inplace = false) where NType where TType <: Union{Date, Int64}
 
     ### SANITY CHECKS ###
 
