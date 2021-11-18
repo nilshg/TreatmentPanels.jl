@@ -1,3 +1,5 @@
+[![CI](https://github.com/nilshg/TreatmentPanels.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/nilshg/TreatmentPanels.jl/actions/workflows/ci.yml)
+
 # TreatmentPanels
 
 Julia package that defines structs to hold panel data for use in causal inference estimation. This
