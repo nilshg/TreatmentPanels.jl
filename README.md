@@ -4,6 +4,21 @@ Julia package that defines structs to hold panel data for use in causal inferenc
 package is used in the package [`SynthControl`](https://github.com/nilshg/SynthControl) to provide
 input data types for different synthetic control algorithms. 
 
+## Installation
+
+The package is registered in the General Registry and can be added via
+
+```
+julia> Pkg.add("TreatmentPanels")
+```
+
+or in the Pkg REPL
+
+```
+(@v1.7) add TreatmentPanels
+```
+## Usage
+
 There are two basic types:
 
 * `BalancedPanel{T1, T2} <: TreatmentPanel` holds panel data in which each
