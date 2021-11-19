@@ -19,7 +19,67 @@ or in the Pkg REPL
 ```
 (@v1.7) add TreatmentPanels
 ```
-## Usage
+
+## Quickstart
+
+The basic idea of the package is to combine a `DataFrame` with a specification of treatment
+assignment to construct a an outcome matrix `Y`, and an accompanying treatment matrix `W`. Both `Y`
+and `W` follow the convention that a row is an observational unit and a column is a time period -
+i.e. it can be seen as a "wide" panel data set. 
+
+```
+julia> using DataFrames, TreatmentPanels
+
+julia> data = DataFrame(region = repeat(["A", "B"], inner = 5), year = repeat(Date(2000):Year(1):Date(2004), 2), outcome = rand(10))
+10×3 DataFrame
+ Row │ region  year        outcome   
+     │ String  Date        Float64   
+─────┼───────────────────────────────
+   1 │ A       2000-01-01  0.0605538
+   2 │ A       2001-01-01  0.820218
+   3 │ A       2002-01-01  0.533732
+   4 │ A       2003-01-01  0.144979
+   5 │ A       2004-01-01  0.353885
+   6 │ B       2000-01-01  0.65294
+   7 │ B       2001-01-01  0.353973
+   8 │ B       2002-01-01  0.683144
+   9 │ B       2003-01-01  0.477427
+  10 │ B       2004-01-01  0.702888
+
+julia> bp = BalancedPanel(data, "A" => Date(2003); id_var = "region", t_var = "year", outcome_var = "outcome")
+Balanced Panel - single unit, single continuous treatment
+    Treated unit: A
+    Number of untreated units: 1
+    First treatment period: 2003-01-01
+    Number of pretreatment periods: 3
+    Number of treatment periods: 2
+
+julia> bp.Y
+2×5 Matrix{Float64}:
+ 0.0605538  0.820218  0.533732  0.144979  0.353885
+ 0.65294    0.353973  0.683144  0.477427  0.702888
+
+julia> bp.W
+2×5 Matrix{Bool}:
+ 0  0  0  1  1
+ 0  0  0  0  0
+```
+
+The package provides simple plotting functionality to visualise treatment assignment and outcomes:
+
+```
+julia> using Plots
+
+julia> plot(bp, markersize = 10)
+```
+<img src="plot1.jpg" alt="Treatment plot" width="400"/>
+
+```
+julia> plot(bp; kind = "outcome")
+```
+<img src="plot2.jpg" alt="Outcome plot" width="400"/>
+
+## Types provided
 
 There are two basic types:
 
@@ -59,10 +119,10 @@ treatment observed. `UnitTreatmentType` currently has three concrete types:
 
 The types of `T1` and `T2` are automatically chosen based on the `treatment_assignment` passed. 
 
-|                 |  Only starting point        |   Start and end point                     |   Multiple start & end points                       |
-|-----------      |------------------------     |-------------------------                  |------------------------------                       |
-| **one unit**         |  Pair{String, Date}         |   Pair{String, Tuple{Date, Date}}         |  Pair{String}, Vector{Tuple{Date, Date}}}           |
-| **multiple units**  |  Vector{Pair{String, Date}} |   Vector{Pair{String, Tuple{Date, Date}}} |  Vector{Pair{String}, Vector{Tuple{Date, Date}}}}   |
+|                     |  Only starting point        |   Start and end point                     |   Multiple start & end points                     |
+|---------------------|-----------------------------|-------------------------------------------|---------------------------------------------------|
+| **one unit**        |  Pair{String, Date}         |   Pair{String, Tuple{Date, Date}}         |  Pair{String}, Vector{Tuple{Date, Date}}}         |
+| **multiple units**  |  Vector{Pair{String, Date}} |   Vector{Pair{String, Tuple{Date, Date}}} |  Vector{Pair{String, Vector{Tuple{Date, Date}}}}  |
 
 As an example, calling `BalancedPanel(data, "unit1" => Date(2000))` will return an object of type
 `BalancedPanel{SingleUnitTreatment, ContinuousTreatment}`, as only one unit is treated and only a
