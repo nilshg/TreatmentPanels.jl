@@ -15,5 +15,6 @@ export ContinuousTreatment, StartEndTreatment
 
 # Export utility functions
 export treated_ids, treated_labels, first_treated_period_ids, first_treated_period_labels, length_T₀, length_T₁
+export get_y₀₀, get_y₀₁, get_y₁₀, get_y₁₁, decompose_y
 
 end

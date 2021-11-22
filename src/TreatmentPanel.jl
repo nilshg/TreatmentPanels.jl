@@ -118,10 +118,181 @@ function construct_W(tas::Vector{Pair{T1, S1}}, N, T, is, ts) where T1 where S1 
     return W
 end
 
-# Constructor based on DatFrame and treatment assignment in pairs
+# Constructor for single continuous treatment - returns BalancedPanel{SingleUnitTreatment, ContinuousTreatment}
+function BalancedPanel(df::DataFrame, treatment_assignment::Pair{T1, T2};
+    id_var = nothing, t_var = nothing, outcome_var = nothing, 
+    sort_inplace = false) where T1 where T2 <: Union{Date, Int}
+
+    # Get all units and time periods
+    is = sort(unique(df[!, id_var])); i_set = Set(is)
+    ts = sort(unique(df[!, t_var])); t_set = Set(ts)
+
+    # Dimensions
+    N = length(is)
+    T = length(ts)
+
+    # Get all treatment units and treatment periods
+    treated_i = first(treatment_assignment)
+    treated_t = last(treatment_assignment)
+
+    # Sanity checks
+    check_id_t_outcome(df, outcome_var, id_var, t_var)
+    in(treated_i, i_set) || throw("Error: Treatment unit $treated_i is not in the list of unit identifiers $id_var")
+    in(treated_t, t_set) || throw("Error: Treatment period $treated_t is not in the list of time identifiers $t_var")
+    
+    # Sort data if necessary, in place if required
+    df = ifelse(issorted(df, [id_var, t_var]), df, 
+                                               ifelse(sort_inplace, sort!(df, [id_var, t_var]), 
+                                                                    sort(df, [id_var, t_var])))
+
+    # Treatment matrix
+    W = construct_W(treatment_assignment, N, T, is, ts)
+
+    # Outcome matrix
+    Y = zeros(size(W))
+    for (row, i) ∈ enumerate(is), (col, t) ∈ enumerate(ts)
+        try
+            Y[row, col] = only(df[(df[!, id_var] .== i) .& (df[!, t_var] .== t), outcome_var])
+        catch ArgumentError
+            throw("$(nrow(df[(df[!, id_var] .== i) .& (df[!, t_var] .== t), :])) outcomes present in the data for unit $i in period $t")
+        end
+    end
+
+    BalancedPanel{SingleUnitTreatment, ContinuousTreatment}(N, T, W, ts, is, Y)  
+end
+
+# Getter functions
+function treated_ids(x::BalancedPanel{SingleUnitTreatment, T2}) where T2
+    for i ∈ 1:x.N
+        for t ∈ 1:x.T
+            if x.W[i, t]
+                return i
+            end
+        end
+    end
+end
+
+function treated_labels(x::BalancedPanel{SingleUnitTreatment, T2}) where T2
+    x.is[treated_ids(x)]
+end
+
+function first_treated_period_ids(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: ContinuousTreatment 
+    findfirst(vec(x.W[treated_ids(x), :]))
+end
+
+function first_treated_period_labels(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: ContinuousTreatment 
+    x.ts[first_treated_period_ids(x)]
+end
+
+function length_T₀(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: ContinuousTreatment 
+    first_treated_period_ids(x) - 1
+end
+
+function length_T₁(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: ContinuousTreatment
+    x.T .- first_treated_period_ids(x) + 1
+end
+
+function get_y₁₀(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: ContinuousTreatment
+    x.Y[treated_ids(x), 1:first_treated_period_ids(x)-1]
+end
+
+function get_y₁₁(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: ContinuousTreatment
+    x.Y[x.W]
+end
+
+function get_y₀₀(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: ContinuousTreatment
+    x.Y[Not(treated_ids(x)), 1:first_treated_period_ids(x)-1]
+end
+
+function get_y₀₁(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: ContinuousTreatment
+    x.Y[Not(treated_ids(x)), first_treated_period_ids(x):end]
+end
+
+function decompose_y(x)
+    get_y₁₀(x), get_y₁₁(x), get_y₀₀(x), get_y₀₁(x)
+end
+
+####################################################################################################
+
+# Constructor for single start/end treatment - returns BalancedPanel{SingleUnitTreatment, StartEndTreatment}
+function BalancedPanel(df::DataFrame, treatment_assignment::Pair{T1, T2};
+    id_var = nothing, t_var = nothing, outcome_var = nothing, 
+    sort_inplace = false) where T1 where T2 <: Union{Pair{Date, Date}, Pair{Int, Int}}
+
+    # Get all units and time periods
+    is = sort(unique(df[!, id_var])); i_set = Set(is)
+    ts = sort(unique(df[!, t_var])); t_set = Set(ts)
+
+    # Dimensions
+    N = length(is)
+    T = length(ts)
+
+    # Get all treatment units and treatment periods
+    treated_i = first(treatment_assignment)
+    treatment_start_end = last(treatment_assignment)
+
+    # Sanity checks
+    check_id_t_outcome(df, outcome_var, id_var, t_var)
+    in(treated_i, i_set) || throw("Error: Treatment unit $treated_i is not in the list of unit identifiers $id_var")
+    in(treatment_start_end[1], t_set) || throw("Error: Treatment start point $(treatment_start_end[1]) is not in the list of time identifiers $t_var")
+    in(treatment_start_end[2], t_set) || throw("Error: Treatment end point $(treatment_start_end[2]) is not in the list of time identifiers $t_var")
+    
+    # Sort data if necessary, in place if required
+    df = ifelse(issorted(df, [id_var, t_var]), df, 
+                                               ifelse(sort_inplace, sort!(df, [id_var, t_var]), 
+                                                                    sort(df, [id_var, t_var])))
+
+    # Treatment matrix
+    W = construct_W(treatment_assignment, N, T, is, ts)
+
+    # Outcome matrix
+    Y = zeros(size(W))
+    for (row, i) ∈ enumerate(is), (col, t) ∈ enumerate(ts)
+        try
+            Y[row, col] = only(df[(df[!, id_var] .== i) .& (df[!, t_var] .== t), outcome_var])
+        catch ArgumentError
+            throw("$(nrow(df[(df[!, id_var] .== i) .& (df[!, t_var] .== t), :])) outcomes present in the data for unit $i in period $t")
+        end
+    end
+
+    BalancedPanel{SingleUnitTreatment, StartEndTreatment}(N, T, W, ts, is, Y)  
+end
+
+function first_treated_period_ids(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: StartEndTreatment 
+    ids = Int64[]
+    treated_row = vec(@view x.W[treated_ids(x), :])
+    for t ∈ 2:x.T
+        if treated_row[t] == 1 && treated_row[t-1] == 0
+            push!(ids, t)
+        end
+    end
+
+    return ids
+end
+
+function first_treated_period_labels(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: StartEndTreatment 
+    x.ts[first_treated_period_ids(x)]
+end
+
+function length_T₀(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: StartEndTreatment 
+    first(first_treated_period_ids(x)) - 1
+end
+
+function length_T₁(x::BalancedPanel{SingleUnitTreatment, T2}) where T2 <: StartEndTreatment
+    x.T .- last(first_treated_period_ids(x)) + 1
+end
+
+
+
+# Fallback method - if the length of treatment assignment is one use single treatment method above
 function BalancedPanel(df::DataFrame, treatment_assignment; 
     id_var = nothing, t_var = nothing, outcome_var = nothing,  
     sort_inplace = false) where NType where TType
+
+    if length(treatment_assignment) == 1
+        return BalancedPanel(df, only(treatment_assignment); id_var = id_var, t_var = t_var,
+                                outcome_var = outcome_var, sort_inplace = sort_inplace)
+    end
 
     # Get all units and time periods
     is = sort(unique(df[!, id_var])); i_set = Set(is)
@@ -165,14 +336,10 @@ function BalancedPanel(df::DataFrame, treatment_assignment;
     end
 
     # Determine UnitTreatmentType and TreatmentDurationType
-    uttype = if length(treated_is) == 1
-        SingleUnitTreatment
+    uttype = if all(==(treatment_assignment[1][2]), last.(treatment_assignment))
+        MultiUnitSimultaneousTreatment
     else
-        if all(==(treatment_assignment[1][2]), last.(treatment_assignment))
-            MultiUnitSimultaneousTreatment
-        else
-            MultiUnitStaggeredTreatment
-        end
+        MultiUnitStaggeredTreatment
     end
 
     tdtype = if typeof(treatment_assignment) <: Pair
