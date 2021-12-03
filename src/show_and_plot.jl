@@ -4,7 +4,7 @@ using RecipesBase
 function Base.show(io::IO, mime::MIME"text/plain", x::BalancedPanel{SingleUnitTreatment, ContinuousTreatment})
     println("Balanced Panel - single unit, single continuous treatment")
     println("    Treated unit: $(treated_labels(x))")
-    println("    Number of untreated units: $(x.N - 1)")
+    println("    Number of untreated units: $(size(x.Y, 1) - 1)")
     println("    First treatment period: $(first_treated_period_labels(x))")
     println("    Number of pretreatment periods: $(length_T₀(x))")
     println("    Number of treatment periods: $(length_T₁(x))")
