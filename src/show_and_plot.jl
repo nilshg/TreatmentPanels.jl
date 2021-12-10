@@ -1,8 +1,15 @@
 using RecipesBase
 
 # Custom show methods
-function Base.show(io::IO, mime::MIME"text/plain", x::BalancedPanel{SingleUnitTreatment, ContinuousTreatment})
-    println("Balanced Panel - single unit, single continuous treatment")
+title(x::BalancedPanel{SingleUnitTreatment{Continuous}}) = "single treated unit, continuous treatment"
+title(x::BalancedPanel{SingleUnitTreatment{Discontinuous}}) = "single treated unit, discontinuous treatment"
+title(x::BalancedPanel{MultiUnitTreatment{Simultaneous{Continuous}}}) = "multiple treated units, simultaneous continuous treatment"
+title(x::BalancedPanel{MultiUnitTreatment{Simultaneous{Discontinuous}}}) = "multiple treated units, simultaneous discontinuous treatment"
+title(x::BalancedPanel{MultiUnitTreatment{Staggered{Continuous}}}) = "multiple treated units, staggered continuous treatment"
+title(x::BalancedPanel{MultiUnitTreatment{Staggered{Discontinuous}}}) = "multiple treated units, staggered discontinuous treatment"
+
+function Base.show(io::IO, mime::MIME"text/plain", x::BalancedPanel{SingleUnitTreatment{Continuous}})
+    println("Balanced Panel - $(title(x))")
     println("    Treated unit: $(treated_labels(x))")
     println("    Number of untreated units: $(size(x.Y, 1) - 1)")
     println("    First treatment period: $(first_treated_period_labels(x))")
@@ -10,6 +17,7 @@ function Base.show(io::IO, mime::MIME"text/plain", x::BalancedPanel{SingleUnitTr
     println("    Number of treatment periods: $(length_T₁(x))")
 end
 
+#!# TO DO - add show methods for other panel types
 
 # Plotting recipe
 @recipe function f(bp::BalancedPanel; kind = "treatment")

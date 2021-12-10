@@ -9,9 +9,11 @@ export BalancedPanel, UnbalancedPanel
 
 # Export treatment description types
 export UnitTreatmentType
-export SingleUnitTreatment, MultiUnitSimultaneousTreatment, MultiUnitStaggeredTreatment
+export SingleUnitTreatment, MultiUnitTreatment
+export TreatmentTimingType
+export Staggered, Simultaneous
 export TreatmentDurationType 
-export ContinuousTreatment, StartEndTreatment
+export Continuous, Discontinuous
 
 # Export utility functions
 export treated_ids, treated_labels, first_treated_period_ids, first_treated_period_labels, length_T₀, length_T₁

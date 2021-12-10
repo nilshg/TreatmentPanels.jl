@@ -16,23 +16,46 @@ end
 
 
 @testset "Single unit, continuous treatment" begin
-    int_treatment = "a" => 2
-    date_treatment = "a" => Date(2001)
+    int_treatment = "Single Treated Unit" => 5
+    date_treatment = "Single Treated Unit" => Date(2004)
 
-    test_df = DataFrame(id = ["a", "a", "b", "b"], 
-        int_period = [1, 2, 1, 2], date_period = [Date(2000), Date(2001), Date(2000), Date(2001)],
-        value = 1.0:4.0)
+    single_continuous_data = DataFrame(
+        name = [fill("Single Treated Unit", 8); fill("Untreated Unit 1", 8); fill("Untreated Unit 2", 8)], 
+        period = repeat(1:8, 3), 
+        year_period = repeat(Date(2000):Year(1):Date(2007), 3),
+        outcome = vec([parse(Int, "$(i)$(t)") for t ∈ 1:8, i ∈ 1:3]))
 
     # Treatment specified as a single pair
-    @test BalancedPanel(test_df, int_treatment;
-        id_var = :id, t_var = :int_period, outcome_var = :value) isa BalancedPanel{SingleUnitTreatment, ContinuousTreatment}
+    sc_bp_int = BalancedPanel(single_continuous_data, int_treatment;
+        id_var = :name, t_var = :period, outcome_var = :outcome)
+    @test sc_bp_int isa BalancedPanel{SingleUnitTreatment{Continuous}}
     # Treatment specified as a length one vector of pairs
-    @test BalancedPanel(test_df, [int_treatment];
-        id_var = :id, t_var = :int_period, outcome_var = :value) isa BalancedPanel{SingleUnitTreatment, ContinuousTreatment}
-        
+    
+    sc_bp_int2 = BalancedPanel(single_continuous_data, [int_treatment];
+        id_var = :name, t_var = :period, outcome_var = :outcome) 
+    @test sc_bp_int2 isa BalancedPanel{SingleUnitTreatment{Continuous}}
+    
     # Year treatment
-    @test BalancedPanel(test_df, date_treatment;
-        id_var = :id, t_var = :date_period, outcome_var = :value) isa BalancedPanel{SingleUnitTreatment, ContinuousTreatment}
+    sc_bp_year = BalancedPanel(single_continuous_data, date_treatment;
+        id_var = :name, t_var = :year_period, outcome_var = :outcome) 
+    @test sc_bp_year isa BalancedPanel{SingleUnitTreatment{Continuous}}
+        
+    # Utility functions
+    y₁₀, y₁₁, y₀₀, y₀₁ = decompose_y(sc_bp_year)
+    @test y₁₀ == [11.0, 12.0, 13.0, 14.0]
+    @test y₁₁ == [15.0, 16.0, 17.0, 18.0]
+    @test y₀₀ == [21.0 22.0 23.0 24.0
+                  31.0 32.0 33.0 34.0]
+    @test y₀₁ == [25.0 26.0 27.0 28.0
+                  35.0 36.0 37.0 38.0]
+    
+    @test length_T₀(sc_bp_year) == 4
+    @test length_T₁(sc_bp_year) == 4
+    @test treated_ids(sc_bp_year) == 1
+    @test treated_labels(sc_bp_year) == "Single Treated Unit"
+    @test first_treated_period_ids(sc_bp_year) == 5
+    @test first_treated_period_ids(sc_bp_int) == 5
+    @test first_treated_period_labels(sc_bp_year) == Date(2004) 
 end
 
 @testset "Single unit, single time-limited treatment" begin
@@ -45,7 +68,9 @@ end
     bp = BalancedPanel(test_df, treatment;
         id_var = :id, t_var = :period, outcome_var = :value)
 
-    @test bp isa BalancedPanel{SingleUnitTreatment, StartEndTreatment}
+    @test bp isa BalancedPanel{SingleUnitTreatment{Discontinuous}}
+
+    #!# TO DO - test utility functions for this case
 end
 
 @testset "Single unit, multiple time-limited treatments" begin
@@ -73,7 +98,9 @@ end
     bp = BalancedPanel(test_df, treatment;
         id_var = :id, t_var = :period, outcome_var = :value)
     
-    @test bp isa BalancedPanel{MultiUnitSimultaneousTreatment, ContinuousTreatment}
+    @test bp isa BalancedPanel{MultiUnitTreatment{Simultaneous{Continuous}}}
+
+    #!# TO DO - test utility functions for this case
 end
 
 @testset "Multiple units, continuous staggered treatment" begin
@@ -86,7 +113,9 @@ end
     bp = BalancedPanel(test_df, treatment;
         id_var = :id, t_var = :period, outcome_var = :value)
 
-    @test bp isa BalancedPanel{MultiUnitStaggeredTreatment, ContinuousTreatment}
+    @test bp isa BalancedPanel{MultiUnitTreatment{Staggered{Continuous}}}
+
+    #!# TO DO - test utility functions for this case
 end
 
 #!# TO ADD - tests of plotting functionality
