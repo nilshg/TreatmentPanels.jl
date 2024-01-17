@@ -5,10 +5,11 @@ include("show_and_plot.jl")
 
 # Export main types
 export TreatmentPanel
-export BalancedPanel, UnbalancedPanel
+export BalancedPanel 
+# export UnbalancedPanel - Not yet implemented
 
 # Export treatment description types
-export UnitTreatmentType
+export TreatmentType
 export SingleUnitTreatment, MultiUnitTreatment
 export TreatmentTimingType
 export Staggered, Simultaneous

@@ -185,7 +185,7 @@ function treated_ids(x::BalancedPanel{SingleUnitTreatment{T}}) where T
 end
 
 function treated_ids(x::BalancedPanel{MultiUnitTreatment{T}}) where T
-    findall(>(0), vec(sum(Y, dims = 2)))
+    any.(eachrow(x.W))
 end
 
 """
@@ -197,15 +197,25 @@ function treated_labels(x::BalancedPanel{SingleUnitTreatment{T}}) where T
     x.is[treated_ids(x)]
 end
 
+function treated_labels(x::BalancedPanel{MultiUnitTreatment{Simultaneous{Continuous}}})
+    x.is[treated_ids(x)]
+end
+
 """
     first_treated_period_ids(x <: BalancedPanel)
 
     Returns the indices of the first treated period for each treated units, that is, a Vector{Int}
     of length Nₜᵣ, where each element is the index of the first 1 in the row of treatment matrix W
     corresonding to the treatment unit. 
+
+    For a single treated unit, returns only the index of the first treated period. For multiple 
 """
 function first_treated_period_ids(x::BalancedPanel{SingleUnitTreatment{T}}) where T
     findfirst(vec(x.W[treated_ids(x), :]))
+end
+
+function first_treated_period_ids(x::BalancedPanel{MultiUnitTreatment{T}}) where T
+    [x for x ∈ findfirst.(eachrow(x.W)) if !isnothing(x)]
 end
 
 """
@@ -227,6 +237,11 @@ function length_T₀(x::BalancedPanel{SingleUnitTreatment{Continuous}})
     first_treated_period_ids(x) - 1
 end
 
+function length_T₀(x::BalancedPanel{MultiUnitTreatment{Simultaneous{Continuous}}})
+    first_treated_period_ids(x) .- 1
+end
+
+
 """
     length_T₁(x <: BalancedPanel)
 
@@ -236,6 +251,9 @@ function length_T₁(x::BalancedPanel{SingleUnitTreatment{Continuous}})
     size(x.Y, 2) .- first_treated_period_ids(x) + 1
 end
 
+function length_T₁(x::BalancedPanel{MultiUnitTreatment{Simultaneous{Continuous}}})
+    size(x.Y[treated_ids(x), :], 2) .- first_treated_period_ids(x) .+ 1
+end
 
 """ 
     get_y₁₀(x <: BalancedPanel)
@@ -246,6 +264,7 @@ end
 function get_y₁₀(x::BalancedPanel{SingleUnitTreatment{Continuous}})
     x.Y[treated_ids(x), 1:first_treated_period_ids(x)-1]
 end
+
 
 """ 
     get_y₁₁(x <: BalancedPanel)
@@ -340,7 +359,7 @@ end
 # Fallback method - if the length of treatment assignment is one use single treatment method above
 function BalancedPanel(df::DataFrame, treatment_assignment; 
     id_var = nothing, t_var = nothing, outcome_var = nothing,  
-    sort_inplace = false) where NType where TType
+    sort_inplace = false)
 
     if length(treatment_assignment) == 1
         return BalancedPanel(df, only(treatment_assignment); id_var = id_var, t_var = t_var,

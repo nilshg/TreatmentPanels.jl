@@ -1,4 +1,6 @@
 [![CI](https://github.com/nilshg/TreatmentPanels.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/nilshg/TreatmentPanels.jl/actions/workflows/ci.yml)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+
 
 # TreatmentPanels
 
@@ -17,7 +19,7 @@ julia> Pkg.add("TreatmentPanels")
 or in the Pkg REPL
 
 ```
-(@v1.7) add TreatmentPanels
+(@v1.10) add TreatmentPanels
 ```
 
 ## Quickstart

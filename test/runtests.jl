@@ -2,6 +2,8 @@ using TreatmentPanels
 using Test
 using DataFrames, Dates
 
+include("Aqua.jl")
+
 @testset "Input tests" begin
     test_df = DataFrame(id = ["a", "a", "b", "b"], period = [1, 2, 1, 2], value = 1.0:4.0)
     
